@@ -39,7 +39,7 @@ const data = {
   ]
 };
 
-const ForceNetworkGraph = () => {
+const Lattice_3d = () => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
@@ -95,6 +95,21 @@ const ForceNetworkGraph = () => {
     
   }, []);
 
+  const lockYAxisRotation = () => {
+    if (fgRef.current) {
+      console.log("hello workign ")
+      const controls = fgRef.current.controls();
+      controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
+      controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
+      controls.enablePan = true; // Disable panning
+      controls.enableRotate = false ;
+    }
+  };
+
+  useEffect(() => {
+    lockYAxisRotation(); // Call the function to lock rotation when the component mounts
+  }, []); // Run only once on component mount
+
   const handleNodeHover = (node) => {
     const connectedLinks = new Set();
     const connectedNodes = new Set();
@@ -113,29 +128,13 @@ const ForceNetworkGraph = () => {
     setHighlightNodes(connectedNodes);
   };
 
-  const handlePointerMove = (e) => {
-    if (fgRef.current) {
-      const { clientX, clientY } = e;
-      const { camera } = fgRef.current;
-
-      // Rotate camera around the Y-axis
-      const deltaX = clientX - window.innerWidth / 2;
-      const rotationSpeed = 0.005; // Adjust this value for rotation speed
-      camera.rotation.y += deltaX * rotationSpeed;
-      fgRef.current.camera.position.set(0, 0, 300); // Set fixed distance from the graph
-      fgRef.current.camera.lookAt(0, 0, 0); // Always look at the center
-    }
-  };
 
   return (
     <div>
       <Button onClick={resetNodePositions} style={{ marginBottom: "10px" }}>
         Reset Nodes
       </Button>
-      <div
-        onPointerMove={handlePointerMove}
-        style={{ width: "100%", height: "500px", position: "relative" }}
-      >
+      
         <ForceGraph3D
           ref={fgRef}
           graphData={graphData}
@@ -163,10 +162,12 @@ const ForceNetworkGraph = () => {
             node.fx = node.x; // Allow moving along X axis
             node.fz = node.z; // Optionally allow movement along Z axis
           }}
+
+          
         />
       </div>
-    </div>
+ 
   );
 };
 
-export default ForceNetworkGraph;
+export default Lattice_3d;

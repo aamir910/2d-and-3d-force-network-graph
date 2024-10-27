@@ -84,7 +84,7 @@ const data = {
   ],
 };
 
-const ForceNetworkGraph2D = () => {
+const Lattice_2d = () => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
@@ -174,11 +174,11 @@ const ForceNetworkGraph2D = () => {
   }}
   // Set particles per link and speed for visible movement
   linkDirectionalParticles={2} // Number of particles per link
-  linkDirectionalParticleWidth={3} // Width of each particle
+  linkDirectionalParticleWidth={1} // Width of each particle
   linkDirectionalParticleSpeed={() => 0.01} // Speed of particle movement along links
 />
     </div>
   );
 };
 
-export default ForceNetworkGraph2D;
+export default Lattice_2d;
