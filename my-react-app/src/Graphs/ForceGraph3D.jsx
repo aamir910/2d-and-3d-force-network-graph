@@ -36,8 +36,7 @@ const data = {
       [[2, 3, 4, 5], [1], [21], [12, 13, 14, 15]],
       [[0, 1, 2, 3, 4, 5], [], [], [18, 19, 20, 16, 17]]
   ]
-}
-
+};
 
 const ForceNetworkGraph = () => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
@@ -48,14 +47,24 @@ const ForceNetworkGraph = () => {
     const nodes = [];
     const links = [];
 
-    // Add object nodes
+    // Add object nodes with fixed positions for hierarchy
     data.objects.forEach((obj, i) => {
-      nodes.push({ id: `obj-${i}`, name: obj, group: "object" });
+      nodes.push({
+        id: `obj-${i}`,
+        name: obj,
+        group: "object",
+        y: i === 0 ? 200 : 0 // Top node positioned higher
+      });
     });
 
-    // Add property nodes
+    // Add property nodes with flexible positions
     data.properties.forEach((prop, i) => {
-      nodes.push({ id: `prop-${i}`, name: prop, group: "property" });
+      nodes.push({
+        id: `prop-${i}`,
+        name: prop,
+        group: "property",
+        y: -100
+      });
     });
 
     // Add links between objects and properties based on context array
@@ -68,7 +77,6 @@ const ForceNetworkGraph = () => {
       });
     });
 
-    // Set the graph data with nodes and links
     setGraphData({ nodes, links });
   }, []);
 
@@ -99,15 +107,15 @@ const ForceNetworkGraph = () => {
         linkDirectionalParticles={2}
         linkDirectionalParticleSpeed={(d) => d.value * 0.001}
         backgroundColor="white"
-        // Set node color to dark blue
         nodeColor={(node) => (highlightNodes.has(node.id) ? "red" : "darkblue")}
-        // Set link color and highlight connected links on hover
-        linkColor={(link) =>
-          highlightLinks.has(link) ? "red" : "grey"
-        }
-        // Set link width to 2
+        linkColor={(link) => (highlightLinks.has(link) ? "red" : "grey")}
         linkWidth={(link) => (highlightLinks.has(link) ? 3 : 2)}
         onNodeHover={handleNodeHover}
+        onNodeDragEnd={(node) => {
+          node.fx = node.x;
+          node.fy = node.y;
+          node.fz = node.z;
+        }}
       />
     </div>
   );
