@@ -2,57 +2,48 @@ import React, { useEffect, useState, useRef } from "react";
 import ForceGraph3D from "react-force-graph-3d";
 import { Button } from "antd";
 
-
-
-
 const Lattice_3d = () => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
   const fgRef = useRef();
-
-
   const [data, setData] = useState(null); // State to hold the fetched data
 
   useEffect(() => {
-    // Fetch the JSON data
-    fetch('/data.json') // Note: starts from the public folder
+    fetch('/data.json')
       .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        return response.json(); // Parse the JSON data
+        return response.json();
       })
       .then((jsonData) => {
-        setData(jsonData); // Save the data in state
+        setData(jsonData);
         const nodes = [];
         const links = [];
-    
         const lastObjectIndex = jsonData.objects.length - 1;
-    
-        // Add object nodes with fixed positions for hierarchy
+
         jsonData.objects.forEach((obj, i) => {
           nodes.push({
             id: `obj-${i}`,
             name: obj,
             group: "object",
-            fx: i === 0 ? 0 : i === lastObjectIndex ? 0 : null, // Fix x position for `obj-0` and the last object
-            fy: i === 0 ? 450 : i === lastObjectIndex ? -450 : null, // Fix y position for `obj-0` and the last object
-            fz: i === 250 || i === lastObjectIndex ? -250 : null, // Fix z position for `obj-0`
+            fx: 0,
+            fy: i === 0 ? 450 : i === lastObjectIndex ? -450 : null, // Fix top and bottom nodes
+            fz: 0,
+            level: i, // Assign level for horizontal alignment
           });
         });
-    
-        // Add property nodes with flexible positions
+
         jsonData.properties.forEach((prop, i) => {
           nodes.push({
             id: `prop-${i}`,
             name: prop,
             group: "property",
-            y: -200,
+            level: Math.floor(lastObjectIndex / 2), // Position in the middle
           });
         });
-    
-        // Add links between objects and properties based on context array
+
         jsonData.context.forEach((contextArray, objIndex) => {
           contextArray.forEach((propIndex) => {
             links.push({
@@ -61,49 +52,40 @@ const Lattice_3d = () => {
             });
           });
         });
-    
-        setGraphData({ nodes, links });
 
+        setGraphData({ nodes, links });
       })
       .catch((error) => {
         console.error('There was a problem with the fetch operation:', error);
       });
-  }, []); // Empty dependency array means this runs once when the component mounts
-
-
-
-
-
+  }, []);
 
   const resetNodePositions = () => {
     const nodes = [];
     const links = [];
-
     const lastObjectIndex = data.objects.length - 1;
 
-    // Add object nodes with fixed positions for hierarchy
     data.objects.forEach((obj, i) => {
       nodes.push({
         id: `obj-${i}`,
         name: obj,
         group: "object",
-        fx: i === 0 ? 0 : i === lastObjectIndex ? 0 : null, // Fix x position for `obj-0` and the last object
-        fy: i === 0 ? 450 : i === lastObjectIndex ? -450 : null, // Fix y position for `obj-0` and the last object
-        fz: i === 250 || i === lastObjectIndex ? -250 : null, // Fix z position for `obj-0`
+        fx: 0,
+        fy: i === 0 ? 450 : i === lastObjectIndex ? -450 : null,
+        fz: 0,
+        level: i,
       });
     });
 
-    // Add property nodes with flexible positions
     data.properties.forEach((prop, i) => {
       nodes.push({
         id: `prop-${i}`,
         name: prop,
         group: "property",
-        y: -200,
+        level: Math.floor(lastObjectIndex / 2),
       });
     });
 
-    // Add links between objects and properties based on context array
     data.context.forEach((contextArray, objIndex) => {
       contextArray.forEach((propIndex) => {
         links.push({
@@ -117,22 +99,12 @@ const Lattice_3d = () => {
   };
 
   useEffect(() => {
-   
-  }, []);
-
-  const lockYAxisRotation = () => {
     if (fgRef.current) {
-      const controls = fgRef.current.controls();
-      controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
-      controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
-      controls.enablePan = true; // Disable panning
-      controls.enableRotate = false;
+      fgRef.current.d3Force("link").distance(200);
+      fgRef.current.d3Force("charge").strength(-400);
+      fgRef.current.d3Force("center").strength(0.1); // Optimize space usage
     }
-  };
-
-  useEffect(() => {
-    lockYAxisRotation(); // Call the function to lock rotation when the component mounts
-  }, []); // Run only once on component mount
+  }, [graphData]);
 
   const handleNodeHover = (node) => {
     const connectedLinks = new Set();
@@ -151,21 +123,26 @@ const Lattice_3d = () => {
     setHighlightLinks(connectedLinks);
     setHighlightNodes(connectedNodes);
   };
+
   const handleNodeDrag = (node) => {
-    // Prevent dragging if the node is red or purple
-    if (
-      node.id === "obj-0" ||
-      node.id === `obj-${graphData.objects.length - 1}`
-    ) {
-      return false; // Prevent drag for red and purple nodes
+    if (node.id === "obj-0" || node.id === `obj-${graphData.nodes.length - 1}`) {
+      return false;
     }
   };
-  useEffect(() => {
+
+  const lockYAxisRotation = () => {
     if (fgRef.current) {
-      fgRef.current.d3Force("link").distance(190); // Set link distance
-      fgRef.current.d3Force("charge").strength(-550);
+      const controls = fgRef.current.controls();
+      controls.minPolarAngle = Math.PI / 2;
+      controls.maxPolarAngle = Math.PI / 2;
+      controls.enableRotate = false;
     }
-  }, [graphData]);
+  };
+
+  useEffect(() => {
+    lockYAxisRotation();
+  }, []);
+
   return (
     <div>
       <Button onClick={resetNodePositions} style={{ marginBottom: "10px" }}>
@@ -175,21 +152,22 @@ const Lattice_3d = () => {
       <ForceGraph3D
         ref={fgRef}
         graphData={graphData}
-        nodeRelSize={26} // Increase this value to make nodes larger
+        nodeRelSize={26}
         nodeAutoColorBy="group"
-        nodeLabel={(node) => {
-          return `<div style="background-color: black; color: white; padding: 5px; border-radius: 4px;">${node.id}</div>`;
-        }}
+        nodeLabel={(node) => `<div style="background-color: black; color: white; padding: 5px; border-radius: 4px;">${node.id}</div>`}
         linkDirectionalParticles={3}
         linkDirectionalParticleSpeed={(d) => d.value * 0.001}
         backgroundColor="white"
-        nodeColor={(node) => {
-          if (node.id === "obj-0") return "red";
-          if (node.id === `obj-${data.objects.length - 1}`) return "purple";
-          return highlightNodes.has(node.id) ? "red" : "darkblue";
+        nodeThreeObjectExtend={true}
+        nodeThreeObject={(node) => {
+          const color = node.id === "obj-0" ? "red" : node.id === `obj-${data.objects.length - 1}` ? "purple" : "darkblue";
+          return new THREE.Mesh(
+            new THREE.SphereGeometry(15, 32, 32),
+            new THREE.MeshBasicMaterial({ color })
+          );
         }}
         linkColor={(link) => (highlightLinks.has(link) ? "red" : "grey")}
-        linkWidth={(link) => (highlightLinks.has(link) ?11 : 10)}
+        linkWidth={(link) => (highlightLinks.has(link) ? 11 : 10)}
         onNodeHover={handleNodeHover}
         onNodeDrag={handleNodeDrag}
         onNodeDragEnd={(node) => {
@@ -206,33 +184,10 @@ export default Lattice_3d;
 
 function Legend() {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "8px",
-        border: "1px solid #ddd",
-        borderRadius: "4px",
-        backgroundColor: "white",
-        marginBottom: "10px",
-      }}>
-      <div
-        style={{
-          width: "12px",
-          height: "12px",
-          backgroundColor: "red",
-          borderRadius: "50%",
-          marginRight: "8px",
-        }}></div>
+    <div style={{ display: "flex", alignItems: "center", padding: "8px", border: "1px solid #ddd", borderRadius: "4px", backgroundColor: "white", marginBottom: "10px" }}>
+      <div style={{ width: "12px", height: "12px", backgroundColor: "red", borderRadius: "50%", marginRight: "8px" }}></div>
       <span>Starting Node</span>
-      <div
-        style={{
-          width: "12px",
-          height: "12px",
-          backgroundColor: "purple",
-          borderRadius: "50%",
-          margin: "0 8px",
-        }}></div>
+      <div style={{ width: "12px", height: "12px", backgroundColor: "purple", borderRadius: "50%", margin: "0 8px" }}></div>
       <span>Ending Node</span>
     </div>
   );
