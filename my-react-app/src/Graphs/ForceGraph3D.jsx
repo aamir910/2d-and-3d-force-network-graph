@@ -11,7 +11,7 @@ const data = {
     [1, 2, 5, 6, 9],
     [1, 2, 5, 7, 8],
     [1, 3, 4, 6, 9],
-    [1, 3, 4, 7, 8]
+    [1, 3, 4, 7, 8],
   ],
   lattice: [
     [[], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 5, 6], []],
@@ -21,22 +21,67 @@ const data = {
     [[3], [1, 2, 5, 7, 8], [10, 12, 14], [0]],
     [[4], [1, 3, 4, 6, 9], [9, 13, 15], [0]],
     [[5], [1, 3, 4, 7, 8], [11, 14, 15], [0]],
-    [[0, 1], [0, 3, 5], [18, 19], [1, 2]],
-    [[0, 2], [5, 6, 9], [16, 18], [1, 3]],
-    [[0, 4], [3, 6, 9], [16, 19], [1, 5]],
-    [[1, 3], [5, 7, 8], [17, 18], [2, 4]],
-    [[1, 5], [3, 7, 8], [17, 19], [2, 6]],
-    [[2, 3], [1, 2, 5], [18, 20], [3, 4]],
-    [[2, 4], [1, 6, 9], [16, 20], [3, 5]],
-    [[3, 5], [1, 7, 8], [17, 20], [4, 6]],
-    [[4, 5], [1, 3, 4], [19, 20], [5, 6]],
+    [
+      [0, 1],
+      [0, 3, 5],
+      [18, 19],
+      [1, 2],
+    ],
+    [
+      [0, 2],
+      [5, 6, 9],
+      [16, 18],
+      [1, 3],
+    ],
+    [
+      [0, 4],
+      [3, 6, 9],
+      [16, 19],
+      [1, 5],
+    ],
+    [
+      [1, 3],
+      [5, 7, 8],
+      [17, 18],
+      [2, 4],
+    ],
+    [
+      [1, 5],
+      [3, 7, 8],
+      [17, 19],
+      [2, 6],
+    ],
+    [
+      [2, 3],
+      [1, 2, 5],
+      [18, 20],
+      [3, 4],
+    ],
+    [
+      [2, 4],
+      [1, 6, 9],
+      [16, 20],
+      [3, 5],
+    ],
+    [
+      [3, 5],
+      [1, 7, 8],
+      [17, 20],
+      [4, 6],
+    ],
+    [
+      [4, 5],
+      [1, 3, 4],
+      [19, 20],
+      [5, 6],
+    ],
     [[0, 2, 4], [6, 9], [21], [8, 9, 13]],
     [[1, 3, 5], [7, 8], [21], [10, 11, 14]],
     [[0, 1, 2, 3], [5], [21], [7, 8, 10, 12]],
     [[0, 1, 4, 5], [3], [21], [7, 9, 11, 15]],
     [[2, 3, 4, 5], [1], [21], [12, 13, 14, 15]],
-    [[0, 1, 2, 3, 4, 5], [], [], [18, 19, 20, 16, 17]]
-  ]
+    [[0, 1, 2, 3, 4, 5], [], [], [18, 19, 20, 16, 17]],
+  ],
 };
 
 const Lattice_3d = () => {
@@ -46,20 +91,10 @@ const Lattice_3d = () => {
   const fgRef = useRef();
 
   const resetNodePositions = () => {
-    graphData.nodes.forEach((node) => {
-      node.fx = null; // Free the x-axis position
-      node.fy = null; // Free the y-axis position
-      node.fz = null; // Free the z-axis position (for 3D)
-    });
-
-    if (fgRef.current) {
-      fgRef.current.d3ReheatSimulation();
-    }
-  };
-
-  useEffect(() => {
     const nodes = [];
     const links = [];
+
+    const lastObjectIndex = data.objects.length - 1;
 
     // Add object nodes with fixed positions for hierarchy
     data.objects.forEach((obj, i) => {
@@ -67,7 +102,9 @@ const Lattice_3d = () => {
         id: `obj-${i}`,
         name: obj,
         group: "object",
-        y: i === 0 ? 200 : 0 // Top node positioned higher
+        fx: i === 0 ? 0 : i === lastObjectIndex ? 0 : null, // Fix x position for `obj-0` and the last object
+        fy: i === 0 ? 450 : i === lastObjectIndex ? -450 : null, // Fix y position for `obj-0` and the last object
+        fz: i === 250 || i === lastObjectIndex ? -250 : null, // Fix z position for `obj-0`
       });
     });
 
@@ -77,7 +114,7 @@ const Lattice_3d = () => {
         id: `prop-${i}`,
         name: prop,
         group: "property",
-        y: -100
+        y: -200,
       });
     });
 
@@ -92,17 +129,56 @@ const Lattice_3d = () => {
     });
 
     setGraphData({ nodes, links });
-    
+  };
+
+  useEffect(() => {
+    const nodes = [];
+    const links = [];
+
+    const lastObjectIndex = data.objects.length - 1;
+
+    // Add object nodes with fixed positions for hierarchy
+    data.objects.forEach((obj, i) => {
+      nodes.push({
+        id: `obj-${i}`,
+        name: obj,
+        group: "object",
+        fx: i === 0 ? 0 : i === lastObjectIndex ? 0 : null, // Fix x position for `obj-0` and the last object
+        fy: i === 0 ? 450 : i === lastObjectIndex ? -450 : null, // Fix y position for `obj-0` and the last object
+        fz: i === 250 || i === lastObjectIndex ? -250 : null, // Fix z position for `obj-0`
+      });
+    });
+
+    // Add property nodes with flexible positions
+    data.properties.forEach((prop, i) => {
+      nodes.push({
+        id: `prop-${i}`,
+        name: prop,
+        group: "property",
+        y: -200,
+      });
+    });
+
+    // Add links between objects and properties based on context array
+    data.context.forEach((contextArray, objIndex) => {
+      contextArray.forEach((propIndex) => {
+        links.push({
+          source: `obj-${objIndex}`,
+          target: `prop-${propIndex}`,
+        });
+      });
+    });
+
+    setGraphData({ nodes, links });
   }, []);
 
   const lockYAxisRotation = () => {
     if (fgRef.current) {
-      console.log("hello workign ")
       const controls = fgRef.current.controls();
       controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
       controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
       controls.enablePan = true; // Disable panning
-      controls.enableRotate = false ;
+      controls.enableRotate = false;
     }
   };
 
@@ -129,79 +205,86 @@ const Lattice_3d = () => {
   };
   const handleNodeDrag = (node) => {
     // Prevent dragging if the node is red or purple
-    if (node.id === 'obj-0' || node.id === `obj-${graphData.objects.length - 1}`) {
+    if (
+      node.id === "obj-0" ||
+      node.id === `obj-${graphData.objects.length - 1}`
+    ) {
       return false; // Prevent drag for red and purple nodes
     }
   };
-
+  useEffect(() => {
+    if (fgRef.current) {
+      fgRef.current.d3Force("link").distance(190); // Set link distance
+      fgRef.current.d3Force("charge").strength(-550);
+    }
+  }, [graphData]);
   return (
     <div>
       <Button onClick={resetNodePositions} style={{ marginBottom: "10px" }}>
         Reset Nodes
       </Button>
-      <Legend />   
+      <Legend />
       <ForceGraph3D
-  ref={fgRef}
-  graphData={graphData}
-  nodeRelSize={8} // Increase this value to make nodes larger
-  nodeAutoColorBy="group"
-  nodeLabel={(node) => {
-    return `<div style="background-color: black; color: white; padding: 5px; border-radius: 4px;">${node.id}</div>`;
-  }}
-    
-  linkDirectionalParticles={3}
-  linkDirectionalParticleSpeed={(d) => d.value * 0.001}
-  backgroundColor="white"
-  nodeColor={(node) => {
-    if (node.id === 'obj-0') return 'red';
-    if (node.id === `obj-${data.objects.length - 1}`) return 'purple';
-    return highlightNodes.has(node.id) ? 'red' : 'darkblue';
-  }}
-  linkColor={(link) => (highlightLinks.has(link) ? 'red' : 'grey')}
-  linkWidth={(link) => (highlightLinks.has(link) ? 3 : 2)}
-  onNodeHover={handleNodeHover}
-  onNodeDrag={handleNodeDrag}
-  onNodeDragEnd={(node) => {
-    node.fx = node.x;
-    node.fy = node.__initialY || node.y;
-    node.fz = node.z;
-  }}
-/>
-
-      </div>
- 
+        ref={fgRef}
+        graphData={graphData}
+        nodeRelSize={26} // Increase this value to make nodes larger
+        nodeAutoColorBy="group"
+        nodeLabel={(node) => {
+          return `<div style="background-color: black; color: white; padding: 5px; border-radius: 4px;">${node.id}</div>`;
+        }}
+        linkDirectionalParticles={3}
+        linkDirectionalParticleSpeed={(d) => d.value * 0.001}
+        backgroundColor="white"
+        nodeColor={(node) => {
+          if (node.id === "obj-0") return "red";
+          if (node.id === `obj-${data.objects.length - 1}`) return "purple";
+          return highlightNodes.has(node.id) ? "red" : "darkblue";
+        }}
+        linkColor={(link) => (highlightLinks.has(link) ? "red" : "grey")}
+        linkWidth={(link) => (highlightLinks.has(link) ?11 : 10)}
+        onNodeHover={handleNodeHover}
+        onNodeDrag={handleNodeDrag}
+        onNodeDragEnd={(node) => {
+          node.fx = node.x;
+          node.fy = node.__initialY || node.y;
+          node.fz = node.z;
+        }}
+      />
+    </div>
   );
 };
 
 export default Lattice_3d;
 
-
 function Legend() {
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      padding: '8px',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      backgroundColor: 'white',
-      marginBottom: '10px'
-    }}>
-      <div style={{
-        width: '12px',
-        height: '12px',
-        backgroundColor: 'red',
-        borderRadius: '50%',
-        marginRight: '8px'
-      }}></div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "8px",
+        border: "1px solid #ddd",
+        borderRadius: "4px",
+        backgroundColor: "white",
+        marginBottom: "10px",
+      }}>
+      <div
+        style={{
+          width: "12px",
+          height: "12px",
+          backgroundColor: "red",
+          borderRadius: "50%",
+          marginRight: "8px",
+        }}></div>
       <span>Starting Node</span>
-      <div style={{
-        width: '12px',
-        height: '12px',
-        backgroundColor: 'purple',
-        borderRadius: '50%',
-        margin: '0 8px'
-      }}></div>
+      <div
+        style={{
+          width: "12px",
+          height: "12px",
+          backgroundColor: "purple",
+          borderRadius: "50%",
+          margin: "0 8px",
+        }}></div>
       <span>Ending Node</span>
     </div>
   );
