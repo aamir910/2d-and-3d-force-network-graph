@@ -127,47 +127,82 @@ const Lattice_3d = () => {
     setHighlightLinks(connectedLinks);
     setHighlightNodes(connectedNodes);
   };
-
+  const handleNodeDrag = (node) => {
+    // Prevent dragging if the node is red or purple
+    if (node.id === 'obj-0' || node.id === `obj-${graphData.objects.length - 1}`) {
+      return false; // Prevent drag for red and purple nodes
+    }
+  };
 
   return (
     <div>
       <Button onClick={resetNodePositions} style={{ marginBottom: "10px" }}>
         Reset Nodes
       </Button>
-      
-        <ForceGraph3D
-          ref={fgRef}
-          graphData={graphData}
-          nodeAutoColorBy="group"
-          nodeLabel={(node) => {
-            return `<div style="background-color: black; color: white; padding: 5px; border-radius: 4px;">${node.id}</div>`;
-          }}
-          linkDirectionalParticles={3}
-          linkDirectionalParticleSpeed={(d) => d.value * 0.001}
-          backgroundColor="white"
-          nodeColor={(node) => (highlightNodes.has(node.id) ? "red" : "darkblue")}
-          linkColor={(link) => (highlightLinks.has(link) ? "red" : "grey")}
-          linkWidth={(link) => (highlightLinks.has(link) ? 3 : 2)}
-          onNodeHover={handleNodeHover}
-          onNodeDragEnd={(node) => {
-            // Fix the position after dragging
-            node.fx = node.x;  // Fix X position
-            node.fy = node.__initialY || node.y; // Keep Y fixed
-            node.fz = node.z;  // Fix Z position if desired
-          }}
-          onNodeDrag={(node) => {
-            // Lock the Y position
-            node.y = node.__initialY || node.y; // Ensure Y remains fixed
-            // Allow movement in X and Z directions
-            node.fx = node.x; // Allow moving along X axis
-            node.fz = node.z; // Optionally allow movement along Z axis
-          }}
+      <Legend />   
+      <ForceGraph3D
+  ref={fgRef}
+  graphData={graphData}
+  nodeRelSize={8} // Increase this value to make nodes larger
+  nodeAutoColorBy="group"
+  nodeLabel={(node) => {
+    return `<div style="background-color: black; color: white; padding: 5px; border-radius: 4px;">${node.id}</div>`;
+  }}
+    
+  linkDirectionalParticles={3}
+  linkDirectionalParticleSpeed={(d) => d.value * 0.001}
+  backgroundColor="white"
+  nodeColor={(node) => {
+    if (node.id === 'obj-0') return 'red';
+    if (node.id === `obj-${data.objects.length - 1}`) return 'purple';
+    return highlightNodes.has(node.id) ? 'red' : 'darkblue';
+  }}
+  linkColor={(link) => (highlightLinks.has(link) ? 'red' : 'grey')}
+  linkWidth={(link) => (highlightLinks.has(link) ? 3 : 2)}
+  onNodeHover={handleNodeHover}
+  onNodeDrag={handleNodeDrag}
+  onNodeDragEnd={(node) => {
+    node.fx = node.x;
+    node.fy = node.__initialY || node.y;
+    node.fz = node.z;
+  }}
+/>
 
-          
-        />
       </div>
  
   );
 };
 
 export default Lattice_3d;
+
+
+function Legend() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '8px',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      backgroundColor: 'white',
+      marginBottom: '10px'
+    }}>
+      <div style={{
+        width: '12px',
+        height: '12px',
+        backgroundColor: 'red',
+        borderRadius: '50%',
+        marginRight: '8px'
+      }}></div>
+      <span>Starting Node</span>
+      <div style={{
+        width: '12px',
+        height: '12px',
+        backgroundColor: 'purple',
+        borderRadius: '50%',
+        margin: '0 8px'
+      }}></div>
+      <span>Ending Node</span>
+    </div>
+  );
+}
